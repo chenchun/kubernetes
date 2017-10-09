@@ -1027,6 +1027,7 @@ var map_NodeStatus = map[string]string{
 	"images":          "List of container images on this node",
 	"volumesInUse":    "List of attachable volumes in use (mounted) by the node.",
 	"volumesAttached": "List of volumes that are attached to the node.",
+	"usedPorts":       "List of ports currently used on the Node",
 }
 
 func (NodeStatus) SwaggerDoc() map[string]string {
@@ -2020,6 +2021,15 @@ var map_Toleration = map[string]string{
 
 func (Toleration) SwaggerDoc() map[string]string {
 	return map_Toleration
+}
+
+var map_UsedPort = map[string]string{
+	"Protocol": "Protocol for port. Must be UDP or TCP.",
+	"Port":     "Port number",
+}
+
+func (UsedPort) SwaggerDoc() map[string]string {
+	return map_UsedPort
 }
 
 var map_Volume = map[string]string{

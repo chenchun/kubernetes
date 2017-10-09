@@ -73,7 +73,8 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[0]},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		},
 	}, {
 		pods: []*v1.Pod{testPods[1], testPods[2]},
@@ -88,7 +89,8 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[1], testPods[2]},
-			usedPorts:           map[int]bool{80: true, 8080: true},
+			podUsedPorts:        map[int]bool{80: true, 8080: true},
+			usedPorts:           map[int]bool{},
 		},
 	}, { // test non-zero request
 		pods: []*v1.Pod{testPods[3]},
@@ -103,7 +105,8 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[3]},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		},
 	}, {
 		pods: []*v1.Pod{testPods[4]},
@@ -119,7 +122,8 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[4]},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		},
 	}, {
 		pods: []*v1.Pod{testPods[4], testPods[5]},
@@ -135,7 +139,8 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[4], testPods[5]},
-			usedPorts:           map[int]bool{80: true, 8080: true},
+			podUsedPorts:        map[int]bool{80: true, 8080: true},
+			usedPorts:           map[int]bool{},
 		},
 	}, {
 		pods: []*v1.Pod{testPods[6]},
@@ -150,6 +155,7 @@ func TestAssumePodScheduled(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[6]},
+			podUsedPorts:        map[int]bool{},
 			usedPorts:           map[int]bool{},
 		},
 	},
@@ -226,7 +232,8 @@ func TestExpirePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[1]},
-			usedPorts:           map[int]bool{80: false, 8080: true},
+			podUsedPorts:        map[int]bool{80: false, 8080: true},
+			usedPorts:           map[int]bool{},
 		},
 	}}
 
@@ -275,7 +282,8 @@ func TestAddPodWillConfirm(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[0]},
-			usedPorts:           map[int]bool{80: true, 8080: false},
+			podUsedPorts:        map[int]bool{80: true, 8080: false},
+			usedPorts:           map[int]bool{},
 		},
 	}}
 
@@ -320,7 +328,8 @@ func TestAddPodAfterExpiration(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{basePod},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		},
 	}}
 
@@ -373,7 +382,8 @@ func TestUpdatePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[1]},
-			usedPorts:           map[int]bool{8080: true},
+			podUsedPorts:        map[int]bool{8080: true},
+			usedPorts:           map[int]bool{},
 		}, {
 			requestedResource: &Resource{
 				MilliCPU: 100,
@@ -385,7 +395,8 @@ func TestUpdatePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[0]},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		}},
 	}}
 
@@ -440,7 +451,8 @@ func TestExpireAddUpdatePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[1]},
-			usedPorts:           map[int]bool{8080: true},
+			podUsedPorts:        map[int]bool{8080: true},
+			usedPorts:           map[int]bool{},
 		}, {
 			requestedResource: &Resource{
 				MilliCPU: 100,
@@ -452,7 +464,8 @@ func TestExpireAddUpdatePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{testPods[0]},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		}},
 	}}
 
@@ -506,7 +519,8 @@ func TestRemovePod(t *testing.T) {
 			},
 			allocatableResource: &Resource{},
 			pods:                []*v1.Pod{basePod},
-			usedPorts:           map[int]bool{80: true},
+			podUsedPorts:        map[int]bool{80: true},
+			usedPorts:           map[int]bool{},
 		},
 	}}
 
@@ -585,7 +599,7 @@ func buildNodeInfo(node *v1.Node, pods []*v1.Pod) *NodeInfo {
 		expected.pods = append(expected.pods, pod)
 		expected.requestedResource.Add(getResourceRequest(pod))
 		expected.nonzeroRequest.Add(getResourceRequest(pod))
-		expected.usedPorts = schedutil.GetUsedPorts(pod)
+		expected.podUsedPorts = schedutil.GetUsedPorts(pod)
 		expected.generation++
 	}
 

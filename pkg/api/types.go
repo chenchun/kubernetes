@@ -3192,6 +3192,16 @@ type NodeStatus struct {
 	// List of volumes that are attached to the node.
 	// +optional
 	VolumesAttached []AttachedVolume
+	// List of ports currently used on the Node
+	// +optional
+	UsedPorts []UsedPort
+}
+
+type UsedPort struct {
+	// Protocol for port. Must be UDP or TCP.
+	Protocol Protocol
+	// Port number
+	Port int32
 }
 
 type UniqueVolumeName string

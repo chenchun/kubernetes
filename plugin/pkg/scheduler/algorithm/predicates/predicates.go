@@ -844,9 +844,10 @@ func PodFitsHostPorts(pod *v1.Pod, meta algorithm.PredicateMetadata, nodeInfo *s
 		return true, nil, nil
 	}
 
-	existingPorts := nodeInfo.UsedPorts()
+	existingPorts := nodeInfo.PodUsedPorts()
+	usedPorts := nodeInfo.UsedPorts()
 	for wport := range wantPorts {
-		if wport != 0 && existingPorts[wport] {
+		if wport != 0 && (existingPorts[wport] || usedPorts[wport]) {
 			return false, []algorithm.PredicateFailureReason{ErrPodNotFitsHostPorts}, nil
 		}
 	}
