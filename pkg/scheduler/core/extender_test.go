@@ -23,6 +23,7 @@ import (
 
 	"k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/api"
@@ -110,6 +111,7 @@ type FakeExtender struct {
 	weight           int
 	nodeCacheCapable bool
 	filteredNodes    []*v1.Node
+	podSelector      labels.Selector
 }
 
 func (f *FakeExtender) Filter(pod *v1.Pod, nodes []*v1.Node, nodeNameToInfo map[string]*schedulercache.NodeInfo) ([]*v1.Node, schedulerapi.FailedNodesMap, error) {
@@ -181,6 +183,13 @@ func (f *FakeExtender) Bind(binding *v1.Binding) error {
 
 func (f *FakeExtender) IsBinder() bool {
 	return true
+}
+
+func (f *FakeExtender) IsInterested(pod *v1.Pod) bool {
+	if f.podSelector == nil {
+		return true
+	}
+	return f.podSelector.Matches(labels.Set(pod.Labels))
 }
 
 var _ algorithm.SchedulerExtender = &FakeExtender{}
@@ -303,6 +312,22 @@ func TestGenericSchedulerWithExtenders(t *testing.T) {
 			nodes:        []string{"machine1", "machine2"},
 			expectedHost: "machine2", // machine2 has higher score
 			name:         "test 7",
+		},
+		{
+			// Scheduler is expected to not send filter requests to extender if its selector doesn't match the pod.
+			// If it does, the errorPredicateExtender will return an error, since expectsErr is false the test will fail
+			predicates:   map[string]algorithm.FitPredicate{"true": truePredicate},
+			prioritizers: []algorithm.PriorityConfig{{Map: EqualPriorityMap, Weight: 1}},
+			extenders: []FakeExtender{
+				{
+					predicates:  []fitPredicate{errorPredicateExtender},
+					podSelector: labels.Nothing(), // a nothing selector matches nothing
+				},
+			},
+			nodes:        []string{"machine1", "machine2"},
+			expectsErr:   false,
+			expectedHost: "machine2", // machine2 has higher score
+			name:         "test 8",
 		},
 	}
 

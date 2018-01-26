@@ -25,6 +25,8 @@ import (
 	"time"
 
 	"k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	utilnet "k8s.io/apimachinery/pkg/util/net"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/kubernetes/pkg/scheduler/algorithm"
@@ -45,6 +47,7 @@ type HTTPExtender struct {
 	weight           int
 	client           *http.Client
 	nodeCacheCapable bool
+	podSelector      labels.Selector
 }
 
 func makeTransport(config *schedulerapi.ExtenderConfig) (http.RoundTripper, error) {
@@ -83,6 +86,13 @@ func NewHTTPExtender(config *schedulerapi.ExtenderConfig) (algorithm.SchedulerEx
 		Transport: transport,
 		Timeout:   config.HTTPTimeout,
 	}
+	selector := labels.Everything()
+	if config.PodSelector != nil {
+		selector, err = metav1.LabelSelectorAsSelector(config.PodSelector)
+		if err != nil {
+			return nil, err
+		}
+	}
 	return &HTTPExtender{
 		extenderURL:      config.URLPrefix,
 		filterVerb:       config.FilterVerb,
@@ -91,6 +101,7 @@ func NewHTTPExtender(config *schedulerapi.ExtenderConfig) (algorithm.SchedulerEx
 		weight:           config.Weight,
 		client:           client,
 		nodeCacheCapable: config.NodeCacheCapable,
+		podSelector:      selector,
 	}, nil
 }
 
@@ -249,4 +260,9 @@ func (h *HTTPExtender) send(action string, args interface{}, result interface{})
 	}
 
 	return json.NewDecoder(resp.Body).Decode(result)
+}
+
+// IsInterested returns whether this extender is interested in this pod.
+func (h *HTTPExtender) IsInterested(pod *v1.Pod) bool {
+	return h.podSelector.Matches(labels.Set(pod.Labels))
 }

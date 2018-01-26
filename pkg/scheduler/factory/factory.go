@@ -928,14 +928,22 @@ func (f *configFactory) CreateFromConfig(policy schedulerapi.Policy) (*scheduler
 	return f.CreateFromKeys(predicateKeys, priorityKeys, extenders)
 }
 
-// getBinder returns an extender that supports bind or a default binder.
-func (f *configFactory) getBinder(extenders []algorithm.SchedulerExtender) scheduler.Binder {
+// getBinderFunc returns an func which returns an extender that supports bind or a default binder based on the given pod.
+func (f *configFactory) getBinderFunc(extenders []algorithm.SchedulerExtender) func(pod *v1.Pod) scheduler.Binder {
+	var extenderBinder algorithm.SchedulerExtender
 	for i := range extenders {
 		if extenders[i].IsBinder() {
-			return extenders[i]
+			extenderBinder = extenders[i]
+			break
 		}
 	}
-	return &binder{f.client}
+	defaultBinder := &binder{f.client}
+	return func(pod *v1.Pod) scheduler.Binder {
+		if extenderBinder != nil && extenderBinder.IsInterested(pod) {
+			return extenderBinder
+		}
+		return defaultBinder
+	}
 }
 
 // Creates a scheduler from a set of registered fit predicate keys and priority keys.
@@ -987,7 +995,7 @@ func (f *configFactory) CreateFromKeys(predicateKeys, priorityKeys sets.String, 
 		// The scheduler only needs to consider schedulable nodes.
 		NodeLister:          &nodeLister{f.nodeLister},
 		Algorithm:           algo,
-		Binder:              f.getBinder(extenders),
+		GetBinder:           f.getBinderFunc(extenders),
 		PodConditionUpdater: &podConditionUpdater{f.client},
 		PodPreemptor:        &podPreemptor{f.client},
 		WaitForCacheSync: func() bool {

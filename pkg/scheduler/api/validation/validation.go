@@ -19,32 +19,35 @@ package validation
 import (
 	"fmt"
 
-	utilerrors "k8s.io/apimachinery/pkg/util/errors"
+	unversionedvalidation "k8s.io/apimachinery/pkg/apis/meta/v1/validation"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	schedulerapi "k8s.io/kubernetes/pkg/scheduler/api"
 )
 
 // ValidatePolicy checks for errors in the Config
 // It does not return early so that it can find as many errors as possible
 func ValidatePolicy(policy schedulerapi.Policy) error {
-	var validationErrors []error
-
-	for _, priority := range policy.Priorities {
+	validationErrors := field.ErrorList{}
+	priorityPath := field.NewPath("priorities")
+	for i, priority := range policy.Priorities {
 		if priority.Weight <= 0 || priority.Weight >= schedulerapi.MaxWeight {
-			validationErrors = append(validationErrors, fmt.Errorf("Priority %s should have a positive weight applied to it or it has overflown", priority.Name))
+			validationErrors = append(validationErrors, field.Invalid(priorityPath.Index(i).Child("weight"), priority.Weight, fmt.Sprintf("Priority %s should have a positive weight applied to it or it has overflown", priority.Name)))
 		}
 	}
 
+	extendersPath := field.NewPath("extenders")
 	binders := 0
-	for _, extender := range policy.ExtenderConfigs {
+	for i, extender := range policy.ExtenderConfigs {
 		if len(extender.PrioritizeVerb) > 0 && extender.Weight <= 0 {
-			validationErrors = append(validationErrors, fmt.Errorf("Priority for extender %s should have a positive weight applied to it", extender.URLPrefix))
+			validationErrors = append(validationErrors, field.Invalid(extendersPath.Index(i).Child("weight"), extender.Weight, fmt.Sprintf("Priority for extender %s should have a positive weight applied to it", extender.URLPrefix)))
 		}
 		if extender.BindVerb != "" {
 			binders++
 		}
+		validationErrors = append(validationErrors, unversionedvalidation.ValidateLabelSelector(extender.PodSelector, extendersPath.Index(i).Child("podSelector"))...)
 	}
 	if binders > 1 {
-		validationErrors = append(validationErrors, fmt.Errorf("Only one extender can implement bind, found %v", binders))
+		validationErrors = append(validationErrors, field.Invalid(extendersPath, binders, "Only one extender can implement bind"))
 	}
-	return utilerrors.NewAggregate(validationErrors)
+	return validationErrors.ToAggregate()
 }

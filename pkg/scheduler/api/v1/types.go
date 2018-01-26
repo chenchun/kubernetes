@@ -149,6 +149,10 @@ type ExtenderConfig struct {
 	// so the scheduler should only send minimal information about the eligible nodes
 	// assuming that the extender already cached full details of all nodes in the cluster
 	NodeCacheCapable bool `json:"nodeCacheCapable,omitempty"`
+	// Only pods matching this selector will be sent to the extender for filter/prioritize/bind operations.
+	// If empty, it matches every pod.
+	// +optional
+	PodSelector *metav1.LabelSelector `json:"podSelector,omitempty"`
 }
 
 // ExtenderArgs represents the arguments needed by the extender to filter/prioritize
