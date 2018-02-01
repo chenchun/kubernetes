@@ -22,6 +22,7 @@ package api
 
 import (
 	v1 "k8s.io/api/core/v1"
+	meta_v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	rest "k8s.io/client-go/rest"
 )
@@ -106,6 +107,15 @@ func (in *ExtenderConfig) DeepCopyInto(out *ExtenderConfig) {
 			*out = nil
 		} else {
 			*out = new(rest.TLSClientConfig)
+			(*in).DeepCopyInto(*out)
+		}
+	}
+	if in.Selector != nil {
+		in, out := &in.Selector, &out.Selector
+		if *in == nil {
+			*out = nil
+		} else {
+			*out = new(meta_v1.LabelSelector)
 			(*in).DeepCopyInto(*out)
 		}
 	}

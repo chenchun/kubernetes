@@ -12,7 +12,8 @@ go_library(
     importpath = "k8s.io/kubernetes/pkg/scheduler/api/validation",
     deps = [
         "//pkg/scheduler/api:go_default_library",
-        "//vendor/k8s.io/apimachinery/pkg/util/errors:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/apis/meta/v1/validation:go_default_library",
+        "//vendor/k8s.io/apimachinery/pkg/util/validation/field:go_default_library",
     ],
 )
 
