@@ -799,7 +799,8 @@ func TestBindPlugin(t *testing.T) {
 				t.Errorf("test #%v: Didn't expected the postbind plugin to be called %d times.", i, ptbdPlugin.numPostbindCalled)
 			}
 			if err = wait.Poll(10*time.Millisecond, 30*time.Second, func() (done bool, err error) {
-				return unresPlugin.numUnreserveCalled == 1, nil
+				// The scheduler may have tried to schedule the pod several times, so we can only assert numUnreserveCalled > 0
+				return unresPlugin.numUnreserveCalled > 0, nil
 			}); err != nil {
 				t.Errorf("test #%v: Expected the unreserve plugin to be called once, was called %d times.", i, unresPlugin.numUnreserveCalled)
 			}
