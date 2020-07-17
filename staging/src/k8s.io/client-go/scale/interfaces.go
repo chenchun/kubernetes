@@ -18,6 +18,7 @@ package scale
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/watch"
 
 	autoscalingapi "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -44,4 +45,10 @@ type ScaleInterface interface {
 
 	// Patch patches the scale of the given scalable resource.
 	Patch(ctx context.Context, gvr schema.GroupVersionResource, name string, pt types.PatchType, data []byte, opts metav1.PatchOptions) (*autoscalingapi.Scale, error)
+
+	// List lists the scales of the given scalable resource.
+	List(ctx context.Context, resource schema.GroupResource, opts metav1.ListOptions) (*autoscalingapi.ScaleList, error)
+
+	// Watch watches the scale of the given scalable resource. Set name to empty string for watching all scales
+	Watch(ctx context.Context, resource schema.GroupResource, name string, opts metav1.ListOptions) (watch.Interface, error)
 }

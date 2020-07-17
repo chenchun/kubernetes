@@ -477,12 +477,12 @@ func (r *Request) URL() *url.URL {
 	if len(r.resourceName) != 0 || len(r.subpath) != 0 || len(r.subresource) != 0 {
 		p = path.Join(p, r.resourceName, r.subresource, r.subpath)
 	}
-
 	finalURL := &url.URL{}
 	if r.c.base != nil {
 		*finalURL = *r.c.base
 	}
 	finalURL.Path = p
+	klog.Infof("finalpath: %s r %+v", finalURL.Path, *r)
 
 	query := url.Values{}
 	for key, values := range r.params {

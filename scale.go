@@ -35,12 +35,15 @@ func main() {
 		mapper.Reset()
 	}, 5*time.Minute, stop)
 	scaleGetter := scale.New(client.RESTClient(), mapper, dynamic.LegacyAPIPathResolverFunc, resolver)
-	scale, err := scaleGetter.Scales("default").Get(context.Background(), schema.GroupResource{
-		Group:    "apps.tkestack.io",
-		Resource: "TApp",
-	}, "example-tapp", metav1.GetOptions{})
+	tappGroupVersion := schema.GroupResource{Group: "apps.tkestack.io", Resource: "TApp"}
+	scale, err := scaleGetter.Scales("default").Get(context.Background(), tappGroupVersion, "example-tapp", metav1.GetOptions{})
 	if err != nil {
 		klog.Fatal(err)
 	}
-	klog.Infof("%+v", *scale)
+	klog.Infof("scale %+v", *scale)
+	scales, err := scaleGetter.Scales("default").List(context.Background(), tappGroupVersion, metav1.ListOptions{})
+	if err != nil {
+		klog.Fatal(err)
+	}
+	klog.Infof("scale list: %+v", *scales)
 }
