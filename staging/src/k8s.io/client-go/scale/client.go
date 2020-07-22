@@ -253,6 +253,7 @@ func (c *namespacedScaleClient) List(ctx context.Context, resource schema.GroupR
 		AbsPath(path).
 		NamespaceIfScoped(c.namespace, c.namespace != "").
 		Resource(gvr.Resource).
+		//Name("*").
 		SubResource("scale").
 		SpecificallyVersionedParams(&opts, dynamicParameterCodec, versionV1).
 		Do(ctx)
@@ -296,11 +297,18 @@ func convertToScales(result *restclient.Result) (*autoscaling.ScaleList, error) 
 		return nil, err
 	}
 
-	// convert whatever this is to autoscaling/v1.Scale
-	scaleObj, err := scaleConverter.ConvertToVersion(rawScaleObj, autoscaling.SchemeGroupVersion)
-	if err != nil {
-		return nil, fmt.Errorf("received an object from a /scale endpoint which was not convertible to autoscaling Scale: %v", err)
+	sl, ok := rawScaleObj.(*autoscaling.ScaleList)
+	if !ok {
+		return nil, fmt.Errorf("received an object from a /scale endpoint which was not convertible to autoscaling ScaleList: %v", rawScaleObj)
 	}
-
-	return scaleObj.(*autoscaling.ScaleList), nil
+	convertedList := &autoscaling.ScaleList{TypeMeta: sl.TypeMeta, ListMeta: sl.ListMeta, Items: make([]autoscaling.Scale, len(sl.Items))}
+	for i := range sl.Items {
+		// convert whatever this is to autoscaling/v1.Scale
+		scaleObj, err := scaleConverter.ConvertToVersion(&sl.Items[i], autoscaling.SchemeGroupVersion)
+		if err != nil {
+			return nil, fmt.Errorf("received an object from a /scale endpoint which was not convertible to autoscaling Scale: %v", err)
+		}
+		convertedList.Items[i] = *scaleObj.(*autoscaling.Scale)
+	}
+	return convertedList, nil
 }

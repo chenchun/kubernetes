@@ -41,6 +41,8 @@ func main() {
 		klog.Fatal(err)
 	}
 	klog.Infof("scale %+v", *scale)
+	// expect /apis/apps.tkestack.io/v1/namespaces/default/tapps//scale
+	// got /apis/apps.tkestack.io/v1/namespaces/default/tapps/scale
 	scales, err := scaleGetter.Scales("default").List(context.Background(), tappGroupVersion, metav1.ListOptions{})
 	if err != nil {
 		klog.Fatal(err)

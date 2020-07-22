@@ -465,6 +465,13 @@ func (r *crdHandler) serveScale(w http.ResponseWriter, req *http.Request, reques
 		return nil
 	}
 }
+//
+//func formatRequestInfo(requestInfo *apirequest.RequestInfo) {
+//	if requestInfo.Name == "*" {
+//		requestInfo.Name = ""
+//		requestInfo.Parts
+//	}
+//}
 
 // createCustomResourceDefinition removes potentially stale storage so it gets re-created
 func (r *crdHandler) createCustomResourceDefinition(obj interface{}) {
