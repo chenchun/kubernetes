@@ -3,10 +3,10 @@ package main
 import (
 	"context"
 	"flag"
+	autoscalingv1 "k8s.io/api/autoscaling/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
-	clientset "k8s.io/client-go/deprecated"
 	"k8s.io/client-go/discovery"
 	cacheddiscovery "k8s.io/client-go/discovery/cached"
 	"k8s.io/client-go/dynamic"
@@ -24,9 +24,8 @@ func main() {
 	if err != nil {
 		klog.Fatal(err)
 	}
-	client := clientset.NewForConfigOrDie(config)
-	//client.
 	discoveryClient := discovery.NewDiscoveryClientForConfigOrDie(config)
+	//discoveryClient := client.DiscoveryClient
 	resolver := scale.NewDiscoveryScaleKindResolver(discoveryClient)
 	cachedDiscoveryClient := cacheddiscovery.NewMemCacheClient(discoveryClient)
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(cachedDiscoveryClient)
@@ -34,7 +33,10 @@ func main() {
 	go wait.Until(func() {
 		mapper.Reset()
 	}, 5*time.Minute, stop)
-	scaleGetter := scale.New(client.RESTClient(), mapper, dynamic.LegacyAPIPathResolverFunc, resolver)
+	scaleGetter, err := scale.NewForConfig(config, mapper, dynamic.LegacyAPIPathResolverFunc, resolver)
+	if err != nil {
+		klog.Fatal(err)
+	}
 	tappGroupVersion := schema.GroupResource{Group: "apps.tkestack.io", Resource: "TApp"}
 	scale, err := scaleGetter.Scales("default").Get(context.Background(), tappGroupVersion, "example-tapp", metav1.GetOptions{})
 	if err != nil {
@@ -48,4 +50,19 @@ func main() {
 		klog.Fatal(err)
 	}
 	klog.Infof("scale list: %+v", *scales)
+
+	watcher, err := scaleGetter.Scales("default").Watch(context.Background(), tappGroupVersion, "", metav1.ListOptions{})
+	if err != nil {
+		klog.Fatal(err)
+	}
+	for {
+		select {
+		case event := <-watcher.ResultChan():
+			klog.Infof("%s: %v", event.Type, event.Object)
+			scale, ok := event.Object.(*autoscalingv1.Scale)
+			if ok {
+				klog.Infof("watch received obj is scale object: %v", *scale)
+			}
+		}
+	}
 }

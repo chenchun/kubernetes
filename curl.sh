@@ -17,12 +17,12 @@ APISERVER=$(kubectl config view -o jsonpath="{.clusters[?(@.name==\"$CLUSTER_NAM
 #  GET /api/v1/namespaces/test/pods?watch=1&resourceVersion=10245
 # https://kubernetes.io/docs/reference/using-api/api-concepts/
 
-curl -k --cert /var/run/kubernetes/client-admin.crt \
+curl -k -v --cert /var/run/kubernetes/client-admin.crt \
   --key  /var/run/kubernetes/client-admin.key \
   --cacert /var/run/kubernetes/server-ca.crt \
-"$APISERVER/apis/apps.tkestack.io/v1/watch/namespaces/default/tapps/example-tapp/scale"
+"$APISERVER/apis/apps.tkestack.io/v1/namespaces/default/tapps//scale"
 #"$APISERVER/apis/apps.tkestack.io/v1/watch/namespaces/default/tapps//scale"
-#"$APISERVER/apis/apps.tkestack.io/v1/namespaces/default/tapps//scale"
+#"$APISERVER/apis/apps.tkestack.io/v1/watch/namespaces/default/tapps/example-tapp/scale"
 
 # watch for a single tapp scale
 #"$APISERVER/apis/apps.tkestack.io/v1/watch/namespaces/default/tapps/example-tapp/scale"

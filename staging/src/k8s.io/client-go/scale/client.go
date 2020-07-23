@@ -275,12 +275,14 @@ func (c *namespacedScaleClient) Watch(ctx context.Context, resource schema.Group
 		return nil, fmt.Errorf("unable to get client for %s: %v", resource.String(), err)
 	}
 	opts.Watch = true
-	return c.client.clientBase.Get().
+	req := c.client.clientBase.Get().
 		AbsPath(path).
 		NamespaceIfScoped(c.namespace, c.namespace != "").
-		Resource(gvr.Resource).
-		Name(name).
-		SubResource("scale").
+		Resource(gvr.Resource)
+	if name != "" {
+		req.Name(name)
+	}
+	return req.SubResource("scale").
 		SpecificallyVersionedParams(&opts, dynamicParameterCodec, versionV1).
 		Watch(ctx)
 }
