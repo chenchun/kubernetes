@@ -41,6 +41,8 @@ import (
 	"k8s.io/apiserver/pkg/storage/names"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	"k8s.io/client-go/tools/cache"
+	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+
 	"k8s.io/kubernetes/pkg/api/legacyscheme"
 	podutil "k8s.io/kubernetes/pkg/api/pod"
 	api "k8s.io/kubernetes/pkg/apis/core"
@@ -48,7 +50,6 @@ import (
 	"k8s.io/kubernetes/pkg/apis/core/validation"
 	"k8s.io/kubernetes/pkg/kubelet/client"
 	proxyutil "k8s.io/kubernetes/pkg/proxy/util"
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
 
 // podStrategy implements behavior for Pods
@@ -277,9 +278,28 @@ func MatchPod(label labels.Selector, field fields.Selector) storage.SelectionPre
 	}
 }
 
+func MatchPodWithAppIndex(label labels.Selector, field fields.Selector) storage.SelectionPredicate {
+	return storage.SelectionPredicate{
+		Label:       label,
+		Field:       field,
+		GetAttrs:    GetAttrs,
+		IndexFields: []string{"metadata.labels.app"}, // this is working in cacher.Watch
+		IndexLabels: []string{"app"},                 // this is working in cacher.GetList
+	}
+}
+
 // NodeNameTriggerFunc returns value spec.nodename of given object.
 func NodeNameTriggerFunc(obj runtime.Object) string {
 	return obj.(*api.Pod).Spec.NodeName
+}
+
+// AppNameTriggerFunc returns value metadata.labels["app"] of given object.
+func AppNameTriggerFunc(obj runtime.Object) string {
+	pod := obj.(*api.Pod)
+	if pod.Labels == nil {
+		return ""
+	}
+	return pod.Labels["app"]
 }
 
 // NodeNameIndexFunc return value spec.nodename of given object.
@@ -289,6 +309,18 @@ func NodeNameIndexFunc(obj interface{}) ([]string, error) {
 		return nil, fmt.Errorf("not a pod")
 	}
 	return []string{pod.Spec.NodeName}, nil
+}
+
+// AppNameIndexFunc return value metadata.labels["app"] of given object.
+func AppNameIndexFunc(obj interface{}) ([]string, error) {
+	pod, ok := obj.(*api.Pod)
+	if !ok {
+		return nil, fmt.Errorf("not a pod")
+	}
+	if pod.Labels == nil {
+		return []string{}, nil
+	}
+	return []string{pod.Labels["app"]}, nil
 }
 
 // Indexers returns the indexers for pod storage.

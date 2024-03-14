@@ -27,6 +27,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
+	genericfeatures "k8s.io/apiserver/pkg/features"
 	"k8s.io/apiserver/pkg/registry/generic"
 	genericregistry "k8s.io/apiserver/pkg/registry/generic/registry"
 	"k8s.io/apiserver/pkg/registry/rest"
@@ -35,6 +36,10 @@ import (
 	"k8s.io/apiserver/pkg/util/dryrun"
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	policyclient "k8s.io/client-go/kubernetes/typed/policy/v1"
+	"k8s.io/client-go/tools/cache"
+	"k8s.io/klog/v2"
+	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
+
 	podutil "k8s.io/kubernetes/pkg/api/pod"
 	api "k8s.io/kubernetes/pkg/apis/core"
 	"k8s.io/kubernetes/pkg/apis/core/validation"
@@ -45,7 +50,6 @@ import (
 	printerstorage "k8s.io/kubernetes/pkg/printers/storage"
 	registrypod "k8s.io/kubernetes/pkg/registry/core/pod"
 	podrest "k8s.io/kubernetes/pkg/registry/core/pod/rest"
-	"sigs.k8s.io/structured-merge-diff/v4/fieldpath"
 )
 
 // PodStorage includes storage for pods and all sub resources
@@ -91,6 +95,14 @@ func NewStorage(optsGetter generic.RESTOptionsGetter, k client.ConnectionInfoGet
 		AttrFunc:    registrypod.GetAttrs,
 		TriggerFunc: map[string]storage.IndexerFunc{"spec.nodeName": registrypod.NodeNameTriggerFunc},
 		Indexers:    registrypod.Indexers(),
+	}
+	if utilfeature.DefaultFeatureGate.Enabled(genericfeatures.AppIndex) {
+		// cacher doesn't support more than one IndexerFunc
+		options.TriggerFunc = map[string]storage.IndexerFunc{"metadata.label.app": registrypod.AppNameTriggerFunc}
+		options.Indexers = &cache.Indexers{storage.LabelIndex("app"): registrypod.AppNameIndexFunc}
+		store.PredicateFunc = registrypod.MatchPodWithAppIndex
+		klog.V(3).Infof("AppIndex feature enabled, set metadata.label.app as cache trigger func, " +
+			"set MatchPodWithAppIndex as PredicateFunc, set metadata.label.app as a index to cache")
 	}
 	if err := store.CompleteWithOptions(options); err != nil {
 		return PodStorage{}, err

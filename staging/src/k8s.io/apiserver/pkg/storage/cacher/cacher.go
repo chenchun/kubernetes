@@ -24,6 +24,10 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
+	utiltrace "k8s.io/utils/trace"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -40,9 +44,6 @@ import (
 	utilfeature "k8s.io/apiserver/pkg/util/feature"
 	utilflowcontrol "k8s.io/apiserver/pkg/util/flowcontrol"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
-	"k8s.io/utils/clock"
-	utiltrace "k8s.io/utils/trace"
 )
 
 var (
@@ -129,8 +130,10 @@ func (i *indexedWatchers) addWatcher(w *cacheWatcher, number int, value string, 
 			i.valueWatchers[value] = watchersMap{}
 		}
 		i.valueWatchers[value].addWatcher(w, number)
+		klog.V(4).Infof("add value watcher #%d of value %s", number, value)
 	} else {
 		i.allWatchers.addWatcher(w, number)
+		klog.V(4).Infof("add normal watcher #%d of value %s", number, value)
 	}
 }
 

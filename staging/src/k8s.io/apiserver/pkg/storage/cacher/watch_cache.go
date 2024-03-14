@@ -23,6 +23,10 @@ import (
 	"sync"
 	"time"
 
+	"k8s.io/klog/v2"
+	"k8s.io/utils/clock"
+	utiltrace "k8s.io/utils/trace"
+
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/labels"
@@ -30,9 +34,6 @@ import (
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apiserver/pkg/storage"
 	"k8s.io/client-go/tools/cache"
-	"k8s.io/klog/v2"
-	"k8s.io/utils/clock"
-	utiltrace "k8s.io/utils/trace"
 )
 
 const (
@@ -479,6 +480,7 @@ func (w *watchCache) WaitUntilFreshAndList(resourceVersion uint64, matchValues [
 	// TODO: if multiple indexes match, return the one with the fewest items, so as to do as much filtering as possible.
 	for _, matchValue := range matchValues {
 		if result, err := w.store.ByIndex(matchValue.IndexName, matchValue.Value); err == nil {
+			klog.V(4).Infof("list by index name %s, value %s", matchValue.IndexName, matchValue.Value)
 			return result, w.resourceVersion, matchValue.IndexName, nil
 		}
 	}

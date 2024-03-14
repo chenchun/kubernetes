@@ -136,6 +136,10 @@ const (
 	// Allows for updating watchcache resource version with progress notify events.
 	EfficientWatchResumption featuregate.Feature = "EfficientWatchResumption"
 
+	// owner: @chenchun
+	// alpha: v1.24
+	AppIndex featuregate.Feature = "AppIndex"
+
 	// owner: @roycaihw
 	// alpha: v1.20
 	//
